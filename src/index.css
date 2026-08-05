@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+    overflow-x: clip;
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+  h1, h2, h3, h4 { @apply font-serif font-medium text-ink; }
+  :focus-visible { @apply outline-none ring-2 ring-olive/60 ring-offset-2 ring-offset-cream rounded-sm; }
+  ::selection { @apply bg-sand text-ink; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    html { scroll-behavior: auto; }
+  }
+}
+
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12; }
+  .btn { @apply inline-flex items-center justify-center gap-2 font-sans text-[13px] uppercase tracking-[0.18em] transition-all duration-300 ease-soft disabled:opacity-50 disabled:pointer-events-none; }
+  .btn-primary { @apply btn bg-olive text-cream px-8 py-3.5 hover:bg-ink; }
+  .btn-outline { @apply btn border border-olive/40 text-olive px-8 py-3.5 hover:border-olive hover:bg-olive hover:text-cream; }
+  .btn-ghost { @apply btn text-olive px-4 py-2 hover:text-ink; }
+  .input { @apply w-full border border-pebble bg-white/70 px-4 py-3 text-[15px] font-light text-ink placeholder:text-soft/70 focus:border-olive focus:outline-none transition-colors duration-300; }
+  .label { @apply block text-[12px] uppercase tracking-[0.16em] text-soft mb-2; }
+  .eyebrow { @apply text-[12px] uppercase tracking-[0.22em] text-soft; }
+  .prose-numa p { @apply mb-5 leading-relaxed text-[16px] text-ink/85 font-light; }
+  .prose-numa h2 { @apply font-serif text-2xl mt-8 mb-3; }
+}
