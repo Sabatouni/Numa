@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useStore } from "../context/StoreContext";
 import { waLink } from "../lib/whatsapp";
 import { IconMail, IconMapPin, IconPhone, IconWhatsApp, SocialIcon } from "./Icons";
+import { Logo } from "./Logo";
 import NewsletterForm from "./NewsletterForm";
 
 const shopLinks = [
@@ -33,8 +34,8 @@ export default function Footer() {
       <div className="container-page py-16">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <p className="font-serif text-2xl tracking-[0.3em]">{site.name.toUpperCase()}</p>
-            <p className="mt-1 text-[10px] uppercase tracking-[0.4em] text-soft">{site.tagline}</p>
+            <Logo title={site.name} className="h-6 w-auto text-ink" />
+            <p className="mt-2 text-[10px] uppercase tracking-[0.4em] text-soft">{site.tagline}</p>
             <p className="mt-5 max-w-xs text-[15px] font-light leading-relaxed text-soft">{site.description}</p>
             <ul className="mt-6 flex flex-wrap items-center gap-2" aria-label="Social media">
               {socials.map((s) => (

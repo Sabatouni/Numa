@@ -3,9 +3,10 @@ import { NavLink, Route, Routes, useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../lib/types";
-import { Spinner } from "../../components/ui";
+import { BrandLoader } from "../../components/ui";
 import { ToastProvider } from "../../components/admin/AdminUI";
 import { IconExternal, IconLogout, IconMenu, IconClose } from "../../components/Icons";
+import { Logo } from "../../components/Logo";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
 import OrdersAdmin from "./OrdersAdmin";
@@ -80,7 +81,7 @@ export default function AdminApp() {
     return () => { cancelled = true; };
   }, [session]);
 
-  if (checking) return <div className="flex min-h-screen items-center justify-center bg-ivory"><Spinner label="Checking access" /></div>;
+  if (checking) return <div className="flex min-h-screen items-center justify-center bg-ivory"><BrandLoader label="Checking access" /></div>;
   if (recovery && session) return <ResetPassword onDone={() => setRecovery(false)} />;
   if (!session || !profile) return <Login />;
 
@@ -98,8 +99,8 @@ export default function AdminApp() {
         <aside className={`fixed inset-y-0 left-0 z-40 w-60 transform border-r border-linen bg-cream transition-transform duration-300 lg:static lg:translate-x-0 ${navOpen ? "translate-x-0" : "-translate-x-full"}`} aria-label="Admin navigation">
           <div className="flex h-full flex-col">
             <div className="border-b border-linen p-5">
-              <p className="font-serif text-xl tracking-[0.3em]">NUMA</p>
-              <p className="text-[10px] uppercase tracking-[0.3em] text-soft">Studio</p>
+              <Logo className="h-5 w-auto text-ink" />
+              <p className="mt-1.5 text-[10px] uppercase tracking-[0.3em] text-soft">Studio</p>
             </div>
             <nav className="flex-1 overflow-y-auto py-3">
               {nav.map((n) => (
@@ -125,7 +126,7 @@ export default function AdminApp() {
             <button type="button" className="btn-ghost -ml-2 px-2" aria-label={navOpen ? "Close menu" : "Open menu"} onClick={() => setNavOpen((v) => !v)}>
               {navOpen ? <IconClose /> : <IconMenu />}
             </button>
-            <span className="font-serif tracking-[0.25em]">NUMA STUDIO</span>
+            <Logo className="h-4 w-auto text-ink" title="Numa Studio" />
           </header>
           <main className="p-5 sm:p-8 lg:p-10">
             <Routes>
@@ -175,8 +176,8 @@ function ResetPassword({ onDone }: { onDone: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-ivory p-4">
       <title>Numa Studio — Choose a new password</title>
       <div className="w-full max-w-sm border border-linen bg-cream p-8 shadow-sm sm:p-10">
-        <p className="text-center font-serif text-2xl tracking-[0.3em]">NUMA</p>
-        <p className="mt-1 text-center text-[10px] uppercase tracking-[0.35em] text-soft">Choose a new password</p>
+        <Logo className="mx-auto h-6 w-auto text-ink" />
+        <p className="mt-2 text-center text-[10px] uppercase tracking-[0.35em] text-soft">Choose a new password</p>
         <form onSubmit={submit} className="mt-8 space-y-5">
           <div>
             <label htmlFor="new-password" className="label">New password</label>

@@ -2,11 +2,23 @@ import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { IconClose, IconStar } from "./Icons";
+import { Logo } from "./Logo";
 
 export function Spinner({ label = "Loading" }: { label?: string }) {
   return (
     <div role="status" aria-label={label} className="flex justify-center py-16">
       <span className="h-8 w-8 animate-spin rounded-full border-2 border-pebble border-t-olive" />
+      <span className="sr-only">{label}</span>
+    </div>
+  );
+}
+
+/** Full-page branded loading state — the NUMA wordmark with a gentle pulse, for route-level and auth-check loads. */
+export function BrandLoader({ label = "Loading" }: { label?: string }) {
+  return (
+    <div role="status" aria-label={label} className="flex min-h-[60vh] flex-col items-center justify-center gap-5 py-16">
+      <Logo aria-hidden className="h-7 w-auto animate-pulse text-olive sm:h-8" />
+      <span className="h-5 w-5 animate-spin rounded-full border-2 border-pebble border-t-olive" />
       <span className="sr-only">{label}</span>
     </div>
   );

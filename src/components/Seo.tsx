@@ -14,7 +14,7 @@ export default function Seo({ title, description, image, type = "website", jsonL
   const { pathname } = useLocation();
   const url = `${SITE_URL}${pathname}`;
   const desc = description ?? "Timeless baby & kids essentials in natural fabrics. Inspired by Zanzibar, made for little ones everywhere.";
-  const img = image ?? "https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=1200&auto=format&fit=crop";
+  const img = image ?? `${SITE_URL}/og-image.png`;
   return (
     <>
       <title>{title}</title>

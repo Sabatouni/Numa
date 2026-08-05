@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { Logo } from "../../components/Logo";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -37,8 +38,8 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-ivory p-4">
       <title>Numa Studio — Sign in</title>
       <div className="w-full max-w-sm border border-linen bg-cream p-8 shadow-sm sm:p-10">
-        <p className="text-center font-serif text-2xl tracking-[0.3em]">NUMA</p>
-        <p className="mt-1 text-center text-[10px] uppercase tracking-[0.35em] text-soft">Studio access</p>
+        <Logo className="mx-auto h-6 w-auto text-ink" />
+        <p className="mt-2 text-center text-[10px] uppercase tracking-[0.35em] text-soft">Studio access</p>
         <form onSubmit={signIn} className="mt-8 space-y-5">
           <div>
             <label htmlFor="admin-email" className="label">Email</label>

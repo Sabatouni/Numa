@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useStore } from "../context/StoreContext";
 import { IconClose, IconHeart, IconMenu, IconSearch } from "./Icons";
+import { Logo } from "./Logo";
 
 const nav = [
   { to: "/shop", label: "Shop" },
@@ -67,8 +68,8 @@ export default function Header() {
           </div>
 
           <Link to="/" className="group flex flex-col items-center" aria-label={`${site.name} — home`}>
-            <span className="font-serif text-2xl sm:text-[1.9rem] leading-none tracking-[0.28em] sm:tracking-[0.35em] text-ink pl-1">{site.name.toUpperCase()}</span>
-            <span className="mt-1 text-[9px] uppercase tracking-[0.45em] text-soft pl-1">{site.tagline}</span>
+            <Logo title={site.name} className="h-6 w-auto text-ink sm:h-7" />
+            <span className="mt-1.5 text-[9px] uppercase tracking-[0.45em] text-soft pl-1">{site.tagline}</span>
           </Link>
 
           <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
@@ -115,7 +116,7 @@ export default function Header() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-10 flex items-center justify-between">
-                <span className="font-serif text-2xl tracking-[0.3em]">{site.name.toUpperCase()}</span>
+                <Logo title={site.name} className="h-6 w-auto text-ink" />
                 <button type="button" className="btn-ghost -mr-3 px-3" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
                   <IconClose />
                 </button>

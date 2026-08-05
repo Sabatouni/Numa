@@ -6,7 +6,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import WhatsAppFloat from "./components/WhatsAppFloat";
 import ReviewChoiceModal from "./components/ReviewChoiceModal";
-import { Spinner } from "./components/ui";
+import { BrandLoader } from "./components/ui";
 
 const Home = lazy(() => import("./pages/Home"));
 const Shop = lazy(() => import("./pages/Shop"));
@@ -51,7 +51,7 @@ function PublicShell() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.35, ease: [0.25, 0.6, 0.3, 1] }}
           >
-            <Suspense fallback={<Spinner />}>
+            <Suspense fallback={<BrandLoader />}>
               <Routes location={location}>
                 <Route path="/" element={<Home />} />
                 <Route path="/shop" element={<Shop />} />
@@ -92,7 +92,7 @@ export default function App() {
         <Route
           path="/admin/*"
           element={
-            <Suspense fallback={<Spinner />}>
+            <Suspense fallback={<BrandLoader />}>
               <AdminApp />
             </Suspense>
           }
