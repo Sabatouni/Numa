@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { NavLink, Route, Routes, useNavigate } from "react-router-dom";
-import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
-import type { Profile } from "../../lib/types";
 import { BrandLoader } from "../../components/ui";
 import { ToastProvider } from "../../components/admin/AdminUI";
 import { IconExternal, IconLogout, IconMenu, IconClose } from "../../components/Icons";
 import { Logo } from "../../components/Logo";
+import { AuthProvider, useAuth } from "../../context/AuthContext";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
 import OrdersAdmin from "./OrdersAdmin";
@@ -23,7 +22,7 @@ import SocialLinksAdmin from "./SocialLinksAdmin";
 import SettingsAdmin from "./SettingsAdmin";
 import UsersAdmin from "./UsersAdmin";
 
-const nav = [
+const baseNav = [
   { to: "/admin", label: "Dashboard", end: true },
   { to: "/admin/orders", label: "Orders" },
   { to: "/admin/products", label: "Products" },
@@ -35,60 +34,52 @@ const nav = [
   { to: "/admin/homepage", label: "Homepage" },
   { to: "/admin/social", label: "Social Links" },
   { to: "/admin/settings", label: "Settings" },
-  { to: "/admin/users", label: "Users" },
 ];
+// Team/role management is Owner-only -- an Admin can run the studio day to
+// day but shouldn't be able to grant or revoke access. Hidden entirely
+// rather than shown-and-disabled.
+const ownerOnlyNav = [{ to: "/admin/users", label: "Users" }];
 
 export default function AdminApp() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [checking, setChecking] = useState(true);
+  return (
+    <AuthProvider>
+      <AdminAppInner />
+    </AuthProvider>
+  );
+}
+
+function AdminAppInner() {
+  const { session, user, ready, hasAccess, isOwner, signOut: authSignOut } = useAuth();
   const [navOpen, setNavOpen] = useState(false);
   const [recovery, setRecovery] = useState(false);
   const navigate = useNavigate();
 
+  // Recovery-link detection is a UI concern independent of the permission
+  // fetch in AuthProvider -- kept as its own light subscription.
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (!data.session) setChecking(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
-      setSession(s);
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
-      if (!s) { setProfile(null); setChecking(false); }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    setChecking(true);
-    void supabase
-      .from("numa_profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        if (cancelled) return;
-        if (!data) {
-          await supabase.auth.signOut();
-          setProfile(null);
-        } else {
-          setProfile(data as Profile);
-        }
-        setChecking(false);
-      });
-    return () => { cancelled = true; };
-  }, [session]);
-
-  if (checking) return <div className="flex min-h-screen items-center justify-center bg-ivory"><BrandLoader label="Checking access" /></div>;
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-ivory">
+        <BrandLoader label="Checking access" />
+      </div>
+    );
+  }
   if (recovery && session) return <ResetPassword onDone={() => setRecovery(false)} />;
-  if (!session || !profile) return <Login />;
+  if (!session) return <Login />;
+  if (!hasAccess) return <AccessDenied email={user?.email} onSignOut={authSignOut} />;
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await authSignOut();
     navigate("/admin");
   }
+
+  const nav = isOwner ? [...baseNav, ...ownerOnlyNav] : baseNav;
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `block px-4 py-2.5 text-[13px] uppercase tracking-[0.14em] transition-colors duration-200 ${isActive ? "bg-olive text-cream" : "text-soft hover:bg-linen hover:text-ink"}`;
@@ -110,7 +101,7 @@ export default function AdminApp() {
               ))}
             </nav>
             <div className="border-t border-linen p-4 text-[13px]">
-              <p className="mb-3 truncate font-light text-soft">{profile.email}</p>
+              <p className="mb-3 truncate font-light text-soft">{user?.email}</p>
               <div className="flex items-center justify-between">
                 <a href="/" target="_blank" rel="noopener noreferrer" className="btn-ghost -ml-3 gap-1.5 text-[12px]"><IconExternal width={14} height={14} /> View site</a>
                 <button type="button" onClick={() => void signOut()} className="btn-ghost -mr-3 gap-1.5 text-[12px]"><IconLogout width={14} height={14} /> Sign out</button>
@@ -145,13 +136,36 @@ export default function AdminApp() {
               <Route path="homepage" element={<HomepageEditor />} />
               <Route path="social" element={<SocialLinksAdmin />} />
               <Route path="settings" element={<SettingsAdmin />} />
-              <Route path="users" element={<UsersAdmin />} />
+              {/* Also route-guarded, not just nav-hidden: typing /admin/users
+                  directly does not bypass the Owner check. */}
+              <Route path="users" element={isOwner ? <UsersAdmin /> : <AccessDenied email={user?.email} onSignOut={authSignOut} reason="This page is Owner-only." />} />
               <Route path="*" element={<Dashboard />} />
             </Routes>
           </main>
         </div>
       </div>
     </ToastProvider>
+  );
+}
+
+function AccessDenied({ email, onSignOut, reason }: { email?: string | null; onSignOut: () => void | Promise<void>; reason?: string }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-ivory p-6 text-center">
+      <title>Numa Studio — Access denied</title>
+      <Logo className="mb-6 h-6 w-auto text-ink" />
+      <h1 className="font-serif text-2xl text-ink">No studio access on this account</h1>
+      <p className="mt-3 max-w-sm text-[14px] font-light leading-relaxed text-soft">
+        {reason ?? (
+          <>
+            {email} is signed in, but doesn't have a role in Numa Studio yet. Ask an existing Owner to grant
+            access, then sign in again.
+          </>
+        )}
+      </p>
+      <button type="button" onClick={() => void onSignOut()} className="btn-secondary mt-7">
+        Sign out
+      </button>
+    </div>
   );
 }
 
