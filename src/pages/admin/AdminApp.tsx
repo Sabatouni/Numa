@@ -22,7 +22,16 @@ import SocialLinksAdmin from "./SocialLinksAdmin";
 import SettingsAdmin from "./SettingsAdmin";
 import UsersAdmin from "./UsersAdmin";
 
-const baseNav = [
+interface NavItem {
+  to: string;
+  label: string;
+  /** Passed straight through to react-router's NavLink `end` prop --
+   *  optional because only the Dashboard entry needs exact-match
+   *  highlighting; every other item is fine with the default prefix match. */
+  end?: boolean;
+}
+
+const baseNav: NavItem[] = [
   { to: "/admin", label: "Dashboard", end: true },
   { to: "/admin/orders", label: "Orders" },
   { to: "/admin/products", label: "Products" },
@@ -38,7 +47,7 @@ const baseNav = [
 // Team/role management is Owner-only -- an Admin can run the studio day to
 // day but shouldn't be able to grant or revoke access. Hidden entirely
 // rather than shown-and-disabled.
-const ownerOnlyNav = [{ to: "/admin/users", label: "Users" }];
+const ownerOnlyNav: NavItem[] = [{ to: "/admin/users", label: "Users" }];
 
 export default function AdminApp() {
   return (
