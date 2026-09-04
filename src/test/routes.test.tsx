@@ -118,8 +118,9 @@ describe("public routes render without errors", () => {
 });
 
 describe("WhatsApp ordering", () => {
-  it("builds a complete order message and logs the intent", async () => {
-    const open = vi.spyOn(window, "open").mockReturnValue(null);
+  it("collects customer details, opens WhatsApp with the full order, and logs it", async () => {
+    localStorage.removeItem("numa-last-customer");
+    const open = vi.spyOn(window, "open").mockReturnValue({} as Window);
     renderAt("/product/organic-muslin-romper");
     await screen.findByRole("heading", { name: "Organic Muslin Romper", level: 1 });
 
@@ -130,6 +131,29 @@ describe("WhatsApp ordering", () => {
     await user.type(screen.getByLabelText(/Notes for us/), "Gift wrap please");
     await user.click(screen.getByRole("button", { name: /Order on WhatsApp/ }));
 
+    // clicking "Order on WhatsApp" only opens the details step -- nothing
+    // is sent yet
+    expect(open).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("dialog", { name: "Your details" });
+
+    // submitting with empty required fields shows inline errors, not
+    // alert(), and does not open WhatsApp or insert anything
+    await user.click(within(dialog).getByRole("button", { name: /Continue to WhatsApp/ }));
+    expect(await within(dialog).findAllByRole("alert")).not.toHaveLength(0);
+    expect(open).not.toHaveBeenCalled();
+    expect(inserted.numa_orders).toBeUndefined();
+
+    await user.type(within(dialog).getByLabelText("Full name"), "Amina Khalfan");
+    await user.type(within(dialog).getByLabelText("WhatsApp number"), "255712345678");
+    await user.type(within(dialog).getByLabelText("Mobile number"), "255798765432");
+    await user.type(within(dialog).getByLabelText("Email"), "amina@example.com");
+    await user.click(within(dialog).getByRole("button", { name: /Continue to WhatsApp/ }));
+
+    // confirmation screen only appears once the (mocked) insert resolves
+    await within(dialog).findByText(/Order received/);
+    expect(within(dialog).getByText(/Thank you, Amina Khalfan/)).toBeTruthy();
+    expect(within(dialog).getByRole("link", { name: "Track Order" })).toBeTruthy();
+
     expect(open).toHaveBeenCalledTimes(1);
     const url = open.mock.calls[0][0] as string;
     expect(url.startsWith("https://wa.me/255700000000?text=")).toBe(true);
@@ -138,13 +162,91 @@ describe("WhatsApp ordering", () => {
     expect(msg).toContain("Size: 0-3m");
     expect(msg).toContain("Color: Sand");
     expect(msg).toContain("Quantity: 2");
-    expect(msg).toContain("TSh 96,000");
-    expect(msg).toContain("/product/organic-muslin-romper");
+    expect(msg).toContain("Total: TSh 96,000");
     expect(msg).toContain("Notes: Gift wrap please");
+    expect(msg).toContain("Name: Amina Khalfan");
+    expect(msg).toContain("WhatsApp: 255712345678");
+    expect(msg).toContain("Mobile: 255798765432");
+    expect(msg).toContain("Email: amina@example.com");
+    expect(msg).toContain("/track/");
+    expect(msg).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/); // no raw UUIDs
 
-    // order intent logged
+    // order logged with the full order + customer details, current
+    // authoritative price (not a client-supplied total), and a generated
+    // reference + tracking token
     expect(inserted.numa_orders?.length).toBe(1);
-    expect(inserted.numa_orders[0]).toMatchObject({ product_name: "Organic Muslin Romper", quantity: 2, color: "Sand" });
+    const order = inserted.numa_orders[0];
+    expect(order).toMatchObject({
+      product_name: "Organic Muslin Romper", quantity: 2, color: "Sand", price: 96000,
+      customer_name: "Amina Khalfan", customer_whatsapp: "255712345678",
+      customer_mobile: "255798765432", customer_email: "amina@example.com", status: "new",
+    });
+    expect(order.order_number).toMatch(/^NUMA-\d{6}-[A-Z0-9]{6}$/);
+    expect(order.tracking_token).toHaveLength(48);
+    expectNoConsoleErrors();
+  });
+
+  it("also works from Quick View, stacked above the Quick View modal", async () => {
+    localStorage.removeItem("numa-last-customer");
+    const open = vi.spyOn(window, "open").mockReturnValue({} as Window);
+    renderAt("/collections/safari");
+    await screen.findByText("Organic Muslin Romper");
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Quick view/ }));
+    const quickView = await screen.findByRole("dialog", { name: /Quick view: Organic Muslin Romper/ });
+    await user.click(within(quickView).getByRole("button", { name: /Order on WhatsApp/ }));
+
+    const details = await screen.findByRole("dialog", { name: "Your details" });
+    await user.type(within(details).getByLabelText("Full name"), "Grace Temba");
+    await user.type(within(details).getByLabelText("WhatsApp number"), "255712345678");
+    await user.type(within(details).getByLabelText("Mobile number"), "255712345678");
+    await user.type(within(details).getByLabelText("Email"), "grace@example.com");
+    await user.click(within(details).getByRole("button", { name: /Continue to WhatsApp/ }));
+
+    await within(details).findByText(/Order received/);
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(inserted.numa_orders?.length).toBe(1);
+    expect(inserted.numa_orders[0]).toMatchObject({ product_name: "Organic Muslin Romper", customer_name: "Grace Temba" });
+    expectNoConsoleErrors();
+  });
+
+  it("does not open WhatsApp or insert anything until required fields are valid", async () => {
+    localStorage.removeItem("numa-last-customer");
+    const open = vi.spyOn(window, "open").mockReturnValue({} as Window);
+    renderAt("/product/heirloom-knit-blanket");
+    await screen.findByRole("heading", { name: "Heirloom Knit Blanket", level: 1 });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Order on WhatsApp/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Your details" });
+    await user.type(within(dialog).getByLabelText("Full name"), "A");
+    await user.type(within(dialog).getByLabelText("Email"), "not-an-email");
+    await user.click(within(dialog).getByRole("button", { name: /Continue to WhatsApp/ }));
+    expect(within(dialog).getByText(/Enter your full name/)).toBeTruthy();
+    expect(within(dialog).getByText(/Enter a valid WhatsApp number/)).toBeTruthy();
+    expect(within(dialog).getByText(/Enter a valid email address/)).toBeTruthy();
+    expect(open).not.toHaveBeenCalled();
+    expect(inserted.numa_orders).toBeUndefined();
+    expectNoConsoleErrors();
+  });
+});
+
+describe("order tracking", () => {
+  it("shows order status for a valid token without any customer details", async () => {
+    renderAt("/track/track-token-o2");
+    await screen.findByText("NUMA-260721-TRACK1");
+    expect(screen.getByText("Contacted")).toBeTruthy();
+    expect(screen.getByText("Heirloom Knit Blanket")).toBeTruthy();
+    expect(screen.getByText(/TSh 88,000/)).toBeTruthy();
+    // never rendered anywhere on this page
+    expect(screen.queryByText("Grace Temba")).toBeNull();
+    expect(screen.queryByText(/grace@example\.com/)).toBeNull();
+    expect(screen.queryByText(/255712345678/)).toBeNull();
+    expectNoConsoleErrors();
+  });
+
+  it("shows a clean not-found state for an invalid token", async () => {
+    renderAt("/track/does-not-exist");
+    expect(await screen.findByText("Order not found")).toBeTruthy();
     expectNoConsoleErrors();
   });
 });

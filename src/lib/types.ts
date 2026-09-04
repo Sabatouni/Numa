@@ -137,6 +137,8 @@ export interface MediaItem {
   created_at: string;
 }
 
+export type OrderStatus = "new" | "contacted" | "completed" | "cancelled";
+
 export interface OrderRow {
   id: string;
   product_id: string | null;
@@ -146,7 +148,31 @@ export interface OrderRow {
   quantity: number;
   price: number;
   customer_note: string | null;
-  status: "new" | "contacted" | "completed" | "cancelled";
+  customer_name: string | null;
+  customer_whatsapp: string | null;
+  customer_mobile: string | null;
+  customer_email: string | null;
+  order_number: string | null;
+  tracking_token: string | null;
+  whatsapp_message: string | null;
+  status: OrderStatus;
+  created_at: string;
+}
+
+/** Shape returned by the numa_track_order(token) RPC -- deliberately a
+ *  narrower, public-safe subset of OrderRow. Never add customer_name /
+ *  customer_whatsapp / customer_mobile / customer_email / customer_note /
+ *  whatsapp_message / id / product_id / tracking_token here; those must
+ *  never be exposed on the public tracking page. */
+export interface TrackedOrder {
+  order_number: string;
+  status: OrderStatus;
+  product_name: string;
+  size: string | null;
+  color: string | null;
+  quantity: number;
+  price: number;
+  currency: string;
   created_at: string;
 }
 

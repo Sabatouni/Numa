@@ -85,7 +85,19 @@ export const settings = [
 ];
 
 export const orders = [
-  { id: "o1", product_id: "p1", product_name: "Organic Muslin Romper", size: "0-3m", color: "Ivory", quantity: 1, price: 48000, customer_note: null, status: "new", created_at: "2026-07-20T00:00:00Z" },
+  {
+    id: "o1", product_id: "p1", product_name: "Organic Muslin Romper", size: "0-3m", color: "Ivory",
+    quantity: 1, price: 48000, customer_note: null, status: "new", created_at: "2026-07-20T00:00:00Z",
+    customer_name: null, customer_whatsapp: null, customer_mobile: null, customer_email: null,
+    order_number: null, tracking_token: null, whatsapp_message: null,
+  },
+  {
+    id: "o2", product_id: "p2", product_name: "Heirloom Knit Blanket", size: "One size", color: "Taupe",
+    quantity: 1, price: 88000, customer_note: "Please gift wrap", status: "contacted", created_at: "2026-07-21T00:00:00Z",
+    customer_name: "Grace Temba", customer_whatsapp: "255712345678", customer_mobile: "255798765432",
+    customer_email: "grace@example.com", order_number: "NUMA-260721-TRACK1",
+    tracking_token: "track-token-o2", whatsapp_message: "NUMA — ORDER REQUEST...",
+  },
 ];
 
 export const profiles = [

@@ -9,24 +9,53 @@ interface OrderMessageInput {
   size?: string;
   color?: string;
   quantity: number;
-  priceLabel: string;
-  productUrl: string;
+  unitPriceLabel: string;
+  totalPriceLabel: string;
+  orderNumber: string;
+  customerName: string;
+  customerWhatsapp: string;
+  customerMobile: string;
+  customerEmail: string;
+  trackingUrl: string;
   note?: string;
 }
 
+/** Builds the full WhatsApp order-request message: order details, customer
+ *  details, status, and a tracking link. No UUIDs, raw JSON, database
+ *  internals, or RLS/security details ever go in this text -- the tracking
+ *  URL (which embeds the tracking token) is the only "secret" it carries,
+ *  and that's by design so the customer can open it. */
 export function buildOrderMessage(o: OrderMessageInput): string {
   const lines = [
-    "Hello Numa! I would like to order:",
+    "NUMA — ORDER REQUEST",
     "",
-    `• Product: ${o.productName}`,
-    o.size ? `• Size: ${o.size}` : null,
-    o.color ? `• Color: ${o.color}` : null,
-    `• Quantity: ${o.quantity}`,
-    `• Price: ${o.priceLabel}`,
-    `• Link: ${o.productUrl}`,
-    o.note ? `• Notes: ${o.note}` : null,
+    "ORDER",
+    "----------------",
+    `Product: ${o.productName}`,
+    o.size ? `Size: ${o.size}` : null,
+    o.color ? `Color: ${o.color}` : null,
+    `Quantity: ${o.quantity}`,
+    `Unit Price: ${o.unitPriceLabel}`,
+    `Total: ${o.totalPriceLabel}`,
+    `Order Reference: ${o.orderNumber}`,
+    o.note ? `Notes: ${o.note}` : null,
     "",
-    "Thank you!",
+    "CUSTOMER",
+    "----------------",
+    `Name: ${o.customerName}`,
+    `WhatsApp: ${o.customerWhatsapp}`,
+    `Mobile: ${o.customerMobile}`,
+    `Email: ${o.customerEmail}`,
+    "",
+    "ORDER STATUS",
+    "----------------",
+    "Pending",
+    "",
+    "TRACK ORDER",
+    "----------------",
+    o.trackingUrl,
+    "",
+    "Thank you for ordering from Numa! We'll confirm delivery and payment here in this chat.",
   ].filter((l): l is string => l !== null);
   return lines.join("\n");
 }

@@ -123,7 +123,21 @@ export const mockSupabase = {
     getSession: () => Promise.resolve({ data: { session: authState.session } }),
     onAuthStateChange: (cb: (event: string, session: unknown) => void) => {
       authState.listeners.push(cb);
-      return { data: { subscription: { unsubscribe: () => {} } } };
+      // Real supabase-js v2 fires INITIAL_SESSION on registration --
+      // AuthContext relies on this to ever flip `ready` to true, so the
+      // mock has to do it too or every admin test hangs on "Checking
+      // access" forever.
+      queueMicrotask(() => cb("INITIAL_SESSION", authState.session));
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {
+              const i = authState.listeners.indexOf(cb);
+              if (i >= 0) authState.listeners.splice(i, 1);
+            },
+          },
+        },
+      };
     },
     signInWithPassword: vi.fn().mockImplementation(({ email }: { email: string }) => {
       authState.session = { user: { id: "admin-1", email } };
@@ -138,4 +152,51 @@ export const mockSupabase = {
     resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
     updateUser: vi.fn().mockResolvedValue({ data: {}, error: null }),
   },
+  // `my_permissions` backs the RBAC-based admin gate (AuthContext /
+  // permissions.ts); `numa_track_order` backs the public tracking page.
+  // Any signed-in mock session is treated as an owner of numa-web -- these
+  // tests are about the storefront/admin UI, not the RBAC system itself.
+  rpc: vi.fn().mockImplementation((fn: string, args?: Record<string, unknown>) => {
+    if (fn === "my_permissions") {
+      if (!authState.session) return Promise.resolve({ data: [], error: null });
+      return Promise.resolve({
+        data: [
+          {
+            application_id: "app-numa",
+            application_slug: "numa-web",
+            application_name: "Numa Website",
+            role_id: "role-owner",
+            role_slug: "owner",
+            role_name: "Owner",
+            role_level: 30,
+            granted_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+        error: null,
+      });
+    }
+    if (fn === "numa_track_order") {
+      const token = (args as { p_token?: string } | undefined)?.p_token;
+      const order = (tables.numa_orders as Row[]).find((o) => o.tracking_token === token);
+      if (!order) return Promise.resolve({ data: [], error: null });
+      const site = (tables.numa_settings as Row[]).find((s) => s.key === "site")?.value as { currency?: string } | undefined;
+      return Promise.resolve({
+        data: [
+          {
+            order_number: order.order_number,
+            status: order.status,
+            product_name: order.product_name,
+            size: order.size,
+            color: order.color,
+            quantity: order.quantity,
+            price: order.price,
+            currency: site?.currency ?? "TZS",
+            created_at: order.created_at,
+          },
+        ],
+        error: null,
+      });
+    }
+    return Promise.resolve({ data: null, error: null });
+  }),
 };

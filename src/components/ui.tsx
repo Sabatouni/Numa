@@ -64,16 +64,26 @@ interface ModalProps {
   label: string;
   children: ReactNode;
   wide?: boolean;
+  /** Renders above another already-open Modal (e.g. the order-details step
+   *  opened from within Quick View) instead of at the default layer. */
+  stack?: boolean;
 }
 
-export function Modal({ open, onClose, label, children, wide = false }: ModalProps) {
+export function Modal({ open, onClose, label, children, wide = false, stack = false }: ModalProps) {
   const ref = useRef<HTMLDivElement>(null);
+  // Callers routinely pass an inline onClose (a fresh closure every render,
+  // e.g. OrderPanel's closeModal, recreated on every keystroke in its form).
+  // Keeping only `open` in the effect's deps -- and reading onClose through
+  // a ref -- means the focus-trap/keydown listener is set up once per
+  // open/close, not re-run (and re-stealing focus) on every parent render.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
       if (e.key === "Tab" && ref.current) {
         const focusables = ref.current.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -93,7 +103,7 @@ export function Modal({ open, onClose, label, children, wide = false }: ModalPro
       document.body.style.overflow = "";
       previouslyFocused?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return (
     <AnimatePresence>
@@ -103,7 +113,7 @@ export function Modal({ open, onClose, label, children, wide = false }: ModalPro
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
+          className={`fixed inset-0 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm ${stack ? "z-[100]" : "z-[90]"}`}
           onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
           <motion.div

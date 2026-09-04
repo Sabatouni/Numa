@@ -15,6 +15,7 @@ const Collections = lazy(() => import("./pages/Collections"));
 const CollectionDetail = lazy(() => import("./pages/CollectionDetail"));
 const ProductPage = lazy(() => import("./pages/Product"));
 const Wishlist = lazy(() => import("./pages/Wishlist"));
+const TrackOrder = lazy(() => import("./pages/TrackOrder"));
 const About = lazy(() => import("./pages/About"));
 const Journal = lazy(() => import("./pages/Journal"));
 const JournalPost = lazy(() => import("./pages/JournalPost"));
@@ -60,6 +61,7 @@ function PublicShell() {
                 <Route path="/collections" element={<Collections />} />
                 <Route path="/collections/:slug" element={<CollectionDetail />} />
                 <Route path="/product/:slug" element={<ProductPage />} />
+                <Route path="/track/:token" element={<TrackOrder />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/journal" element={<Journal />} />
